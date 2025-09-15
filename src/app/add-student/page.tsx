@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, ChangeEvent, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,39 +8,50 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 
+type StudentFormData = {
+  name: string
+  age: number
+  address: string
+}
+
+const initialFormData: StudentFormData = {
+  name: '',
+  age: 0,
+  address: ''
+}
+
 export default function AddStudent() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    address: ''
-  })
+  const [formData, setFormData] = useState<StudentFormData>(initialFormData)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === "age" ? Number(value) : value
     }))
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoading(true)
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
 
+    if (!formData.name.trim() || !formData.address.trim() || formData.age <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all fields correctly.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setLoading(true)
     try {
       const response = await fetch('/api/students', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          age: parseInt(formData.age),
-          address: formData.address,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       })
 
       if (!response.ok) {
@@ -73,7 +84,7 @@ export default function AddStudent() {
         <CardTitle>Add New Student</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input
@@ -85,20 +96,22 @@ export default function AddStudent() {
               placeholder="Enter student's full name"
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="age">Age</Label>
             <Input
               id="age"
               name="age"
               type="number"
-              value={formData.age}
+              value={formData.age || ''}
               onChange={handleChange}
               required
-              min="1"
-              max="100"
+              min={1}
+              max={100}
               placeholder="Enter student's age"
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>
             <Input
@@ -110,11 +123,8 @@ export default function AddStudent() {
               placeholder="Enter student's address"
             />
           </div>
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading}
-          >
+
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Adding Student...' : 'Add Student'}
           </Button>
         </form>
