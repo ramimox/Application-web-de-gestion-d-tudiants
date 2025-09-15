@@ -8,8 +8,10 @@ datasource db {
 }
 
 model Student {
-  id      Int      @id @default(autoincrement())
-  name    String
-  age     Int
-  address String
+  id        Int      @id @default(autoincrement())
+  name      String
+  age       Int
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
